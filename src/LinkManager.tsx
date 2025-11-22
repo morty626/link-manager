@@ -319,6 +319,7 @@ const LinkCard = React.memo(({
 
 // --- 独立组件: LinkForm ---
 
+
 const LinkForm = ({ 
   editingLink, 
   categories, 
@@ -453,7 +454,7 @@ const LinkForm = ({
 
 // --- 主应用组件 ---
 
-export default function App() {
+export default function LinkManager() {
   // --- State ---
   const [categories, setCategories] = useState<Category[]>([]);
   const [links, setLinks] = useState<LinkItem[]>([]);
@@ -475,6 +476,18 @@ export default function App() {
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   // NEW: 记录放置位置 (前/后)
   const [dropPosition, setDropPosition] = useState<DropPosition>(null);
+
+  // Password Change States
+  const [isChangePwdOpen, setIsChangePwdOpen] = useState(false);
+  const [pwdForm, setPwdForm] = useState({
+    oldPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [pwdError, setPwdError] = useState("");
+  const [pwdSuccess, setPwdSuccess] = useState("");
+  const [pwdLoading, setPwdLoading] = useState(false);
+
 
   // --- Data Loading & Persistence ---
   useEffect(() => {
@@ -826,6 +839,18 @@ export default function App() {
              <Upload size={14} /> 恢复数据
              <input type="file" accept=".json" className="hidden" onChange={importData} />
            </label>
+           <button
+              onClick={() => {
+                setPwdError("");
+                setPwdSuccess("");
+                setPwdForm({ oldPassword: "", newPassword: "", confirmPassword: "" });
+                setIsChangePwdOpen(true);
+              }}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 hover:text-indigo-600 rounded-lg transition-all shadow-sm"
+            >
+              修改密码
+            </button>
+
            <div className="text-center pt-2">
               <span className="text-xs font-medium text-gray-400">v1.0.0</span>
            </div>
@@ -1078,6 +1103,113 @@ export default function App() {
           </div>
         </div>
       </Modal>
+          <Modal
+  isOpen={isChangePwdOpen}
+  onClose={() => setIsChangePwdOpen(false)}
+  title="修改访问密码"
+  maxWidth="max-w-md"
+>
+  <div className="space-y-4">
+    {pwdError && (
+      <div className="text-sm text-red-500 bg-red-50 px-3 py-2 rounded-lg">
+        {pwdError}
+      </div>
+    )}
+    {pwdSuccess && (
+      <div className="text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg">
+        {pwdSuccess}
+      </div>
+    )}
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        当前密码
+      </label>
+      <input
+        type="password"
+        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+        value={pwdForm.oldPassword}
+        onChange={(e) =>
+          setPwdForm((f) => ({ ...f, oldPassword: e.target.value }))
+        }
+      />
+    </div>
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        新密码
+      </label>
+      <input
+        type="password"
+        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+        value={pwdForm.newPassword}
+        onChange={(e) =>
+          setPwdForm((f) => ({ ...f, newPassword: e.target.value }))
+        }
+      />
+    </div>
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        确认新密码
+      </label>
+      <input
+        type="password"
+        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+        value={pwdForm.confirmPassword}
+        onChange={(e) =>
+          setPwdForm((f) => ({ ...f, confirmPassword: e.target.value }))
+        }
+      />
+    </div>
+    <div className="flex justify-end gap-3 pt-2">
+      <button
+        onClick={() => setIsChangePwdOpen(false)}
+        className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+      >
+        取消
+      </button>
+      <button
+        disabled={
+          pwdLoading ||
+          !pwdForm.oldPassword ||
+          !pwdForm.newPassword ||
+          pwdForm.newPassword !== pwdForm.confirmPassword
+        }
+        onClick={async () => {
+          setPwdError("");
+          setPwdSuccess("");
+          if (pwdForm.newPassword !== pwdForm.confirmPassword) {
+            setPwdError("两次输入的新密码不一致");
+            return;
+          }
+          setPwdLoading(true);
+          try {
+            const res = await fetch("/api/change-password", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                oldPassword: pwdForm.oldPassword,
+                newPassword: pwdForm.newPassword,
+              }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+              setPwdError(data.error || "修改失败");
+            } else {
+              setPwdSuccess("密码修改成功，下次请使用新密码登录");
+              setPwdForm({ oldPassword: "", newPassword: "", confirmPassword: "" });
+            }
+          } catch (err) {
+            setPwdError("网络异常，请稍后再试");
+          } finally {
+            setPwdLoading(false);
+          }
+        }}
+        className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {pwdLoading ? "提交中..." : "保存密码"}
+      </button>
+    </div>
+  </div>
+</Modal>
 
     </div>
   );
