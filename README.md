@@ -149,6 +149,7 @@ KV 中目前会用到两个 key：
 在输入框中填入你想要的子域名，例如：
 
 - `link-manager.xxxxx.com`
+  xxxxx.com 为你已经托管在 cf 上的域名
 
 保存后，Cloudflare 会自动：
 
@@ -158,7 +159,6 @@ KV 中目前会用到两个 key：
 参考示意图：
 
 ![Link Manager 自定义域名](./docs/images/screenshot-add_customer_domain.png)
-![Link Manager 自定义域名2](./docs/images/screenshot-add_customer_domain_2.png)
 
 ---
 
